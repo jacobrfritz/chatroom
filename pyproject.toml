@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "A default Python project template using uv."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "websockets>=16.0",
+]
 
 [project.scripts]
 chatroom = "chatroom.cli:main"

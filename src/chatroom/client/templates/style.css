@@ -1,0 +1,62 @@
+/* 1. Modern Reset */
+*, *::before, *::after {
+  box-sizing: border-box; /* Ensures padding doesn't affect width */
+  margin: 0;
+  padding: 0;
+}
+
+/* 2. Document & Body setup */
+html {
+  color-scheme: light dark; /* Supports system dark mode */
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-family: system-ui, sans-serif;
+}
+
+/* 3. Media Defaults */
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* 4. Form elements */
+input, button, textarea, select {
+  font: inherit;
+}
+
+/* 5. Accessible Hidden Content */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.chatbox {
+  /* Size */
+  width: 400px;
+  height: 500px;
+
+  /* Appearance */
+  border: 2px solid #333;
+  padding: 15px;
+  background-color: #9d9d9d;
+
+  /* Behavior */
+  overflow-y: auto;   /* Adds scrollbar when text overflows */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  width: 100%;
+  box-sizing: border-box;
+}
