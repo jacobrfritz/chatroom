@@ -7,11 +7,18 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 # Set the working directory
 WORKDIR /app
 
+# Copy only the files needed for dependency installation
+COPY pyproject.toml uv.lock README.md ./
+
+# Install dependencies without installing the project itself
+# This layer will be cached as long as pyproject.toml and uv.lock are unchanged
+RUN uv sync --frozen --no-install-project --no-dev
+
 # Copy the project files
 COPY . .
 
-# Install dependencies using uv
-RUN uv sync --frozen
+# Install the project itself (the source code)
+RUN uv sync --frozen --no-dev
 
 # Fix potential Windows line endings and make the entrypoint script executable
 RUN sed -i 's/\r$//' docker-entrypoint.sh && chmod +x docker-entrypoint.sh
