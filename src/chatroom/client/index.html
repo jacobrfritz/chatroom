@@ -8,13 +8,23 @@
     <link rel="stylesheet" href="templates/style.css">
   </head>
   <body>
-    <h1>Chat</h1>
-    <br>
-    <div class="chatbox" id="chatbox">
-      <p>Welcome to the chat! </p>
-    </div>    
-    <input type="text" id="chat" placeholder="Type a message!">
-    <button id = "send_button">Send</button>
+    <div class="app-container">
+      <header class="chat-header">
+        <h1>Chat</h1>
+        <button id="theme-toggle" aria-label="Toggle dark mode">
+          <span class="icon">🌓</span>
+        </button>
+      </header>
+      
+      <main class="chatbox" id="chatbox">
+        <p class="system-message">Welcome to the chat!</p>
+      </main>    
+
+      <footer class="input-container">
+        <input type="text" id="chat" placeholder="Type a message..." autocomplete="off">
+        <button id="send_button">Send</button>
+      </footer>
+    </div>
     <script src="static/chatroom.js"></script>
   </body>
 </html>

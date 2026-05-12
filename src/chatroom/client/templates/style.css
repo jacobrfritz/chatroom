@@ -1,62 +1,168 @@
-/* 1. Modern Reset */
+/* Modern Reset */
 *, *::before, *::after {
-  box-sizing: border-box; /* Ensures padding doesn't affect width */
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-/* 2. Document & Body setup */
-html {
-  color-scheme: light dark; /* Supports system dark mode */
-  scroll-behavior: smooth;
+:root {
+  --bg-color: #ffffff;
+  --header-bg: #f8f9fa;
+  --text-color: #212529;
+  --border-color: #dee2e6;
+  --chatbox-bg: #f1f3f5;
+  --primary-color: #007bff;
+  --primary-hover: #0056b3;
+  --bubble-bg: #e9ecef;
+  --bubble-text: #212529;
+  --system-msg-color: #6c757d;
+  --input-bg: #ffffff;
+}
+
+[data-theme="dark"] {
+  --bg-color: #1a1a1b;
+  --header-bg: #2d2d2e;
+  --text-color: #e4e6eb;
+  --border-color: #3e4042;
+  --chatbox-bg: #121212;
+  --primary-color: #2d88ff;
+  --primary-hover: #1b74e4;
+  --bubble-bg: #3e4042;
+  --bubble-text: #e4e6eb;
+  --system-msg-color: #b0b3b8;
+  --input-bg: #242526;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
-  min-height: 100vh;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  font-family: system-ui, sans-serif;
 }
 
-/* 3. Media Defaults */
-img, picture, video, canvas, svg {
-  display: block;
-  max-width: 100%;
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 1000px;
+  margin: 0 auto;
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
 }
 
-/* 4. Form elements */
-input, button, textarea, select {
-  font: inherit;
+.chat-header {
+  padding: 1rem 1.5rem;
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-/* 5. Accessible Hidden Content */
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
+.chat-header h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+#theme-toggle {
+  background: none;
+  border: 1px solid var(--border-color);
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-color);
+  transition: background-color 0.2s;
+}
+
+#theme-toggle:hover {
+  background-color: var(--bubble-bg);
 }
 
 .chatbox {
-  /* Size */
-  width: 400px;
-  height: 500px;
-
-  /* Appearance */
-  border: 2px solid #333;
-  padding: 15px;
-  background-color: #9d9d9d;
-
-  /* Behavior */
-  overflow-y: auto;   /* Adds scrollbar when text overflows */
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  background-color: var(--chatbox-bg);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0.75rem;
+}
 
-  width: 100%;
-  box-sizing: border-box;
+.chatbox p {
+  max-width: 80%;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background-color: var(--bubble-bg);
+  color: var(--bubble-text);
+  word-wrap: break-word;
+  align-self: flex-start;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.chatbox .system-message {
+  align-self: center;
+  background: none;
+  box-shadow: none;
+  color: var(--system-msg-color);
+  font-size: 0.875rem;
+  text-align: center;
+  max-width: 100%;
+}
+
+.input-container {
+  padding: 1rem 1.5rem;
+  background-color: var(--header-bg);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: 0.75rem;
+}
+
+#chat {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#chat:focus {
+  border-color: var(--primary-color);
+}
+
+#send_button {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#send_button:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Scrollbar styling */
+.chatbox::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chatbox::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chatbox::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 10px;
 }
