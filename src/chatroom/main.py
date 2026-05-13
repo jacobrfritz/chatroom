@@ -1,8 +1,9 @@
 import asyncio
 
-from chatroom.server.server import start
+from chatroom.server.server import  Chatroom
 
 
 def run() -> None:
     """Core application logic."""
-    asyncio.run(start())
+    chatroom = Chatroom()
+    asyncio.run(chatroom.start())
