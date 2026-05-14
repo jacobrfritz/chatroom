@@ -44,7 +44,7 @@ function initializeChat() {
     appendMessage("Connected!", true);
     const identity = {
         type: "SET_IDENTITY",
-        username: username
+        message: username
     };
     websocket.send(JSON.stringify(identity));
 }

@@ -8,76 +8,106 @@ from dataclasses import dataclass, asdict
 
 logging.basicConfig(level=logging.INFO)
 
+
 @dataclass
 class Message:
-    type:str
-    value:str
-    
-    
+    type: str | None
+    username: str | None
+    value: str | None
+
+
 class MessageFormatter(Protocol):
-    def format(self, message:Message)->str: ...
-    
+    def format(self, message: Message) -> str: ...
+
 
 class JsonFormatter(MessageFormatter):
-    def format(self, message:Message):
+    def format(self, message: Message):
         return json.dumps(asdict(message))
-    
-    
+
+
 class Chatroom:
-    def __init__(self):
+    def __init__(self, formatter: MessageFormatter):
+        self.formatter = formatter
         self.connections = dict()
         self.recent_messages = list()
-        
-        
-    async def send_all_clients(self, message:str):
+
+    async def send_single_client(self, message: Message, client: ServerConnection):
+        formatted_message = self.formatter.format(message)
+        if message.type in ["MESSAGE", "CONNECTED"]:
+            self.recent_messages.append(message)
+            self.recent_messages = self.recent_messages[-20:]
+        return asyncio.create_task(client.send(formatted_message))
+
+    async def send_all_clients(self, message: Message):
         if self.connections:
-            tasks = [asyncio.create_task(client.send(message)) for client in self.connections.values()]
-            
+            tasks = [
+                asyncio.create_task(self.send_single_client(message, client))
+                for client in self.connections.values()
+            ]
             if tasks:
                 await asyncio.wait(tasks)
-            
-            
-    async def send_recent_messages(self, websocket:ServerConnection):
+
+    async def send_recent_messages(self, websocket: ServerConnection):
         if len(self.recent_messages) != 0:
-                tasks = [asyncio.create_task(websocket.send(message)) for message in self.recent_messages]
-                    
-                if tasks:
-                    await asyncio.wait(tasks)    
-    
-    
-    def validate_identity(self, message:dict, websocket:ServerConnection)->str|None:
-        username = message.get("username")
-        if username and username.strip() != "":
+            tasks = [
+                asyncio.create_task(self.send_single_client(message, websocket))
+                for message in self.recent_messages
+            ]
+            if tasks:
+                await asyncio.wait(tasks)
+
+    def validate_identity(
+        self, username: str, websocket: ServerConnection
+    ) -> str | None:
+        if (
+            username
+            and username.strip() != ""
+            and username not in self.connections.keys()
+        ):
             self.connections[username] = websocket
             return username
         else:
             return None
-    
-                
-    async def handler(self, websocket):   
+
+    def parse_message(self, message: str) -> tuple[str | None, str | None]:
+        msg = json.loads(message)
+        if isinstance(msg, dict):
+            message_type = msg.get("type")
+            message_value = msg.get("message")
+            if message_type and message_value:
+                return (message_type, message_value)
+        return (None, None)
+
+    async def handler(self, websocket):
         out = None
         try:
             await self.send_recent_messages(websocket)
             async for message in websocket:
-                message = json.loads(message)
-                message_type = message.get("type")
-                if message_type == "SET_IDENTITY":
-                    username = self.validate_identity(message,websocket)
-                    if username and username not in self.connections.keys():
-                        out = f"{username} connected."
-                        await self.send_all_clients(out)
+                message_type, message_value = self.parse_message(message)
+                if message_type and message_value:
+                    if message_type == "SET_IDENTITY":
+                        username = self.validate_identity(message_value, websocket)
+                        if username:
+                            message = Message(
+                                username=username, type="CONNECTED", value=message_value
+                            )
+                            await self.send_all_clients(message)
+                        else:
+                            message = Message(
+                                username=username, type="invalid_user", value=None
+                            )
+                            await self.send_single_client(message, websocket)
+                            continue
+                    elif message_type == "MESSAGE":
+                        message = Message(
+                            username=username, type=message_type, value=message_value
+                        )
+                        await self.send_all_clients(message)
                     else:
-                        #await websocket.send("invalid username")
-                        continue
-                elif message_type == "MESSAGE":
-                    out = f"{username} said: {message.get("message")}"
-                    await self.send_all_clients(out)
-                else:
-                    logging.warning("Message Type Not Recognized")
-                
-                if out:
-                    self.recent_messages.append(out)
-                    self.recent_messages = self.recent_messages[-20:]
+                        message = Message(username="", type="ERROR", value="")
+                        await self.send_all_clients(message)
+                        logging.warning(f"Message Type Not Recognized {out}")
+
         finally:
             # Unregister when the client disconnects
             del self.connections[username]
@@ -86,6 +116,8 @@ class Chatroom:
         async with serve(self.handler, "0.0.0.0", 8765):
             await asyncio.Future()  # run forever
 
+
 if __name__ == "__main__":
-    chatroom = Chatroom()
+    formatter = JsonFormatter()
+    chatroom = Chatroom(formatter)
     asyncio.run(chatroom.start())
