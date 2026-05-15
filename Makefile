@@ -22,4 +22,4 @@ typecheck:
 	uv run mypy src
 
 run:
-	uv run chatroom
+	@trap 'kill 0' EXIT; uv run chatroom & python3 -m http.server 8080
