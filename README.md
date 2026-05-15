@@ -75,6 +75,11 @@ To run the application in a production-like environment with a reverse proxy:
    docker build -t chatroom .
    ```
 
+   **Push the Image to dockerhub**
+   ```bash
+   docker buildx build --platform linux/amd64,linux/arm64 -t hateyoujake/chatroom-app:latest --push .
+   ```
+
 2. **Run the container:**
    ```bash
    docker run -p 8080:8080 -p 8765:8765 chatroom
