@@ -63,18 +63,12 @@ chatroom/
    cd src/chatroom/client
    python -m http.server 8080
    ```
-   Then open `http://localhost:8080` in your browser.
-
-### Development Tasks
-
-- **Run tests:** `make test`
-- **Linting:** `make lint`
-- **Formatting:** `make format`
-- **Type Checking:** `make typecheck`
+   
+   **Note:** The application now uses dynamic WebSocket routing and expects a reverse proxy (like Nginx or Caddy) to route requests to `/chat-ws/` to the backend on port 8765. For direct local access without a proxy, you may need to adjust the connection URL in `chatroom.mjs`.
 
 ## 🐳 Docker
 
-To run the entire application (frontend and backend) in a container:
+To run the application in a production-like environment with a reverse proxy:
 
 1. **Build the image:**
    ```bash
@@ -85,12 +79,18 @@ To run the entire application (frontend and backend) in a container:
    ```bash
    docker run -p 8080:8080 -p 8765:8765 chatroom
    ```
-   Access the app at `http://localhost:8080`.
+   
+   **Architecture Note:** This container starts both the frontend (8080) and backend (8765). Ensure your deployment environment (e.g., Docker Compose with Nginx) is configured to:
+   - Serve static files from port 8080.
+   - Proxy WebSocket traffic at `/chat-ws/` to port 8765.
 
 ## 🔌 API & Protocols
 
-### WebSocket (Port 8765)
+### WebSocket (Dynamic Path: `/chat-ws/`)
 
+The client automatically detects the protocol (`ws://` or `wss://`) based on the page's connection.
+
+- **Endpoint:** `${window.location.host}/chat-ws/`
 - **Incoming Messages (JSON):**
   - `{"type": "SET_IDENTITY", "username": "string"}`: Sets the user's display name.
   - `{"type": "MESSAGE", "message": "string"}`: Sends a message to the room.

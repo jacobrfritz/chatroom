@@ -43,8 +43,13 @@ const usernameInput = document.getElementById("username-input");
 const loginButton = document.getElementById("login-button");
 
 // --- Chat Logic ---
-const url = `ws://${window.location.hostname}:8765`;
-const websocket = new WebSocket(url);
+const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+// Fallback for local development: if on port 8080, connect directly to 8765.
+// In production (proxied), use the /chat-ws/ path.
+const wsUrl = window.location.port === '8080' 
+    ? `${wsProtocol}${window.location.hostname}:8765` 
+    : `${wsProtocol}${window.location.host}/chat-ws/`;
+const websocket = new WebSocket(wsUrl);
 
 function appendMessage(text, isSystem = false) {
     const p = document.createElement("p");
