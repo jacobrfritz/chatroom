@@ -1,10 +1,11 @@
 import asyncio
 
-from chatroom.server.server import Chatroom, JsonFormatter
+from chatroom.server.server import Chatroom, JsonFormatter, IdentityMessageHandler, BroadcastMessageHandler
 
 
 def run() -> None:
     """Core application logic."""
-    jsonFormatter = JsonFormatter()
-    chatroom = Chatroom(jsonFormatter)
+    formatter = JsonFormatter()
+    message_handlers = [IdentityMessageHandler(), BroadcastMessageHandler()]
+    chatroom = Chatroom(formatter, message_handlers)
     asyncio.run(chatroom.start())

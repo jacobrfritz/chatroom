@@ -6,6 +6,13 @@ const MessageSchema = z.object({
   message: z.string().min(1, "Username is required")
 });
 
+const IdentitySchema = z.object({
+  username: z.string().min(3).max(20).trim(),
+  uuid: z.string().uuid({ message: "Invalid UUID format" })
+});
+
+const identity = null;
+
 const send_button = document.getElementById("send_button");
 const chatbox = document.getElementById('chatbox');
 const input = document.getElementById("chat");
@@ -57,9 +64,9 @@ function handleLogin() {
     };
     
     const result = MessageSchema.safeParse(identity);
+
     if (result.success) {
         websocket.send(JSON.stringify(identity));
-        appendMessage(`${username} just connected!`, true);
         loginOverlay.style.display = "none";
     } else {
         alert(result.error.errors[0].message);
@@ -82,10 +89,12 @@ websocket.addEventListener("open", initializeChat);
 // Handle incoming messages
 websocket.addEventListener("message", (e) => {
     const message = JSON.parse(e.data);
-    if(message.type === "MESSAGE"){
+    if(message.message_type === "MESSAGE"){
         console.log('valid incoming message');
-        console.log(message.value);
+        console.log(message);
         appendMessage(message.value);
+    } else if (message.message_type === "CONNECTED") {
+        appendMessage(message.value, true);
     }
 });
 
@@ -96,7 +105,7 @@ function sendMessage() {
         type: "MESSAGE",
         message: message
     };
-    const result = MessageSchema.safeParse(out)
+    const result = MessageSchema.safeParse(out);
     if(result.success){
         if(websocket.readyState === WebSocket.OPEN) {
         websocket.send(JSON.stringify(out));
