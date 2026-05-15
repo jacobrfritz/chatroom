@@ -1,3 +1,11 @@
+import { z } from 'https://cdn.jsdelivr.net/npm/zod@3.22.4/+esm';
+
+
+const MessageSchema = z.object({
+  type: z.string().min(1, "Type is required"),
+  message: z.string().min(1, "Username is required")
+});
+
 const send_button = document.getElementById("send_button");
 const chatbox = document.getElementById('chatbox');
 const input = document.getElementById("chat");
@@ -23,6 +31,10 @@ themeToggle.addEventListener('click', () => {
     setTheme(currentTheme === 'dark' ? 'light' : 'dark');
 });
 
+const loginOverlay = document.getElementById("login-overlay");
+const usernameInput = document.getElementById("username-input");
+const loginButton = document.getElementById("login-button");
+
 // --- Chat Logic ---
 const url = `ws://${window.location.hostname}:8765`;
 const websocket = new WebSocket(url);
@@ -35,18 +47,33 @@ function appendMessage(text, isSystem = false) {
     chatbox.scrollTop = chatbox.scrollHeight;
 }
 
-// Define the logic for when the connection starts
-function initializeChat() {
-    let username = null;
-    while(!username){
-        username = prompt("Enter a Username:");
-    }
-    appendMessage("Connected!", true);
+function handleLogin() {
+    const username = usernameInput.value.trim();
+    if (!username) return;
+
     const identity = {
         type: "SET_IDENTITY",
         message: username
     };
-    websocket.send(JSON.stringify(identity));
+    
+    const result = MessageSchema.safeParse(identity);
+    if (result.success) {
+        websocket.send(JSON.stringify(identity));
+        appendMessage(`${username} just connected!`, true);
+        loginOverlay.style.display = "none";
+    } else {
+        alert(result.error.errors[0].message);
+    }
+}
+
+loginButton.addEventListener("click", handleLogin);
+usernameInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") handleLogin();
+});
+
+// Define the logic for when the connection starts
+function initializeChat() {
+    console.log("WebSocket connected");
 }
 
 // Handle the connection event
@@ -54,7 +81,12 @@ websocket.addEventListener("open", initializeChat);
 
 // Handle incoming messages
 websocket.addEventListener("message", (e) => {
-    appendMessage(e.data);
+    const message = JSON.parse(e.data);
+    if(message.type === "MESSAGE"){
+        console.log('valid incoming message');
+        console.log(message.value);
+        appendMessage(message.value);
+    }
 });
 
 // Helper function to send messages
@@ -64,15 +96,18 @@ function sendMessage() {
         type: "MESSAGE",
         message: message
     };
-    if (message && websocket.readyState === WebSocket.OPEN) {
+    const result = MessageSchema.safeParse(out)
+    if(result.success){
+        if(websocket.readyState === WebSocket.OPEN) {
         websocket.send(JSON.stringify(out));
         input.value = "";
     }
+    }
+    
 }
 
 send_button.addEventListener("click", sendMessage);
 
-// Fixed: Added 'event' parameter to the listener
 input.addEventListener("keydown", function(event) {
     if (event.key === "Enter") {
         sendMessage();

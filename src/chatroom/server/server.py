@@ -36,25 +36,19 @@ class Chatroom:
         if message.type in ["MESSAGE", "CONNECTED"]:
             self.recent_messages.append(message)
             self.recent_messages = self.recent_messages[-20:]
-        return asyncio.create_task(client.send(formatted_message))
+        await client.send(formatted_message)
 
     async def send_all_clients(self, message: Message):
         if self.connections:
-            tasks = [
-                asyncio.create_task(self.send_single_client(message, client))
-                for client in self.connections.values()
-            ]
-            if tasks:
-                await asyncio.wait(tasks)
+            await asyncio.gather(
+                *(self.send_single_client(message, client) for client in self.connections.values())
+            )
 
     async def send_recent_messages(self, websocket: ServerConnection):
-        if len(self.recent_messages) != 0:
-            tasks = [
-                asyncio.create_task(self.send_single_client(message, websocket))
-                for message in self.recent_messages
-            ]
-            if tasks:
-                await asyncio.wait(tasks)
+        if self.recent_messages:
+            await asyncio.gather(
+                *(self.send_single_client(message, websocket) for message in self.recent_messages)
+            )
 
     def validate_identity(
         self, username: str, websocket: ServerConnection
@@ -79,38 +73,48 @@ class Chatroom:
         return (None, None)
 
     async def handler(self, websocket):
-        out = None
+        username = None
         try:
             await self.send_recent_messages(websocket)
-            async for message in websocket:
-                message_type, message_value = self.parse_message(message)
+            async for raw_message in websocket:
+                message_type, message_value = self.parse_message(raw_message)
                 if message_type and message_value:
                     if message_type == "SET_IDENTITY":
-                        username = self.validate_identity(message_value, websocket)
-                        if username:
-                            message = Message(
-                                username=username, type="CONNECTED", value=message_value
+                        valid_username = self.validate_identity(message_value, websocket)
+                        if valid_username:
+                            username = valid_username
+                            msg = Message(
+                                username=username, 
+                                type="CONNECTED", 
+                                value=message_value
                             )
-                            await self.send_all_clients(message)
+                            await self.send_all_clients(msg)
                         else:
-                            message = Message(
-                                username=username, type="invalid_user", value=None
+                            msg = Message(
+                                username=None, 
+                                type="invalid_user", 
+                                value=None
                             )
-                            await self.send_single_client(message, websocket)
+                            await self.send_single_client(msg, websocket)
                             continue
                     elif message_type == "MESSAGE":
-                        message = Message(
-                            username=username, type=message_type, value=message_value
+                        msg = Message(
+                            username=username, 
+                            type=message_type, 
+                            value=message_value
                         )
-                        await self.send_all_clients(message)
+                        await self.send_all_clients(msg)
                     else:
-                        message = Message(username="", type="ERROR", value="")
-                        await self.send_all_clients(message)
-                        logging.warning(f"Message Type Not Recognized {out}")
-
+                        msg = Message(username="", type="ERROR", value="")
+                        await self.send_all_clients(msg)
+                        logging.warning(f"Message Type Not Recognized: {message_type}")
+        except Exception as e:
+            logging.error(f"Error in handler: {e}")
         finally:
             # Unregister when the client disconnects
-            del self.connections[username]
+            if username and username in self.connections:
+                del self.connections[username]
+                logging.info(f"User {username} disconnected")
 
     async def start(self):
         async with serve(self.handler, "0.0.0.0", 8765):
