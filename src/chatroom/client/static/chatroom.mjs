@@ -78,8 +78,12 @@ function handleLogin() {
     const result = MessageSchema.safeParse(identity);
 
     if (result.success) {
-        websocket.send(JSON.stringify(identity));
-        loginOverlay.style.display = "none";
+        if (websocket.readyState === WebSocket.OPEN) {
+            websocket.send(JSON.stringify(identity));
+            loginOverlay.style.display = "none";
+        } else {
+            alert("Connecting to server... Please try again in a moment.");
+        }
     } else {
         alert(result.error.errors[0].message);
     }
