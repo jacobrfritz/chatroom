@@ -83,7 +83,7 @@ class Chatroom(RoomContext):
         self.formatter = formatter
         self.message_handlers = message_handlers
         self.connections:list[User] = list()
-        self.recent_messages = list()
+        self.recent_messages:list[Message] = list()
 
     async def send_single_client(self, message: Message, client: ServerConnection):
         formatted_message = self.formatter.format(message)
