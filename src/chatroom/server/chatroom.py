@@ -1,55 +1,32 @@
 import logging
-from websockets.asyncio.server import serve
-from websockets.asyncio.server import ServerConnection
-from websockets.exceptions import ConnectionClosed
 import uuid
-import asyncio
 import json
+import asyncio 
+
+from websockets.asyncio.server import serve, ServerConnection
 
 from chatroom.server.interfaces import (
     Message,
     User,
+    RoomContext,
     MessageFormatter,
     MessageHandler,
-    RoomContext,
+    ConnectionHandler,
 )
 
 
 class Chatroom(RoomContext):
     def __init__(
-        self, formatter: MessageFormatter, message_handlers: list[MessageHandler]
+        self, 
+        formatter: MessageFormatter, 
+        message_handlers: list[MessageHandler],
+        connection_handler: ConnectionHandler
     ):
         self.formatter = formatter
         self.message_handlers = message_handlers
-        self.connections: list[User] = list()
-        self.recent_messages: list[Message] = list()
-
-    async def send_single_client(self, message: Message, client: ServerConnection):
-        try:
-            formatted_message = self.formatter.format(message)
-            await client.send(formatted_message)
-        except ConnectionClosed:
-            logging.debug("Attempted to send to a closed connection")
-
-    async def send_all_clients(self, message: Message):
-        if self.connections:
-            await asyncio.gather(
-                *(
-                    self.send_single_client(message, user.conn)
-                    for user in self.connections
-                ),
-                return_exceptions=True,
-            )
-
-    async def send_recent_messages(self, websocket: ServerConnection):
-        if self.recent_messages:
-            await asyncio.gather(
-                *(
-                    self.send_single_client(message, websocket)
-                    for message in self.recent_messages
-                ),
-                return_exceptions=True,
-            )
+        self.connection_handler = connection_handler
+        self.connections:list[User] = list()
+        self.recent_messages:list[str] = list()
 
     def add_user(self, username: str, conn: ServerConnection):
         user_id = uuid.uuid4()
@@ -61,6 +38,14 @@ class Chatroom(RoomContext):
             if user.conn == conn:
                 return user.username
         return "Anonymous"
+
+    async def send_all_clients(self, message: Message):
+        formatted_message = self.formatter.format(message)
+        await self.connection_handler.send_all_clients(self, formatted_message)
+
+    async def send_single_client(self, message: Message, conn: ServerConnection):
+        formatted_message = self.formatter.format(message)
+        await self.connection_handler.send_single_client(formatted_message, conn)
 
     def parse_message(self, message: str) -> tuple[str | None, str | None]:
         try:
@@ -74,13 +59,13 @@ class Chatroom(RoomContext):
             logging.error(f"Error parsing message: {e}")
         return (None, None)
 
-    async def handler(self, websocket):
+    async def handler(self, websocket: ServerConnection):
         logging.info("New connection established")
         try:
-            await self.send_recent_messages(websocket)
+            await self.connection_handler.send_recent_messages(self, websocket)
             async for raw_message in websocket:
                 logging.info(f"Received raw message: {raw_message}")
-                message_type, message_value = self.parse_message(raw_message)
+                message_type, message_value = self.parse_message(str(raw_message))
                 if message_type and message_value:
                     for message_handler in self.message_handlers:
                         if message_handler.keyword == message_type.upper():
@@ -102,12 +87,14 @@ class Chatroom(RoomContext):
             logging.error(f"Error in handler: {e}")
         finally:
             # Unregister when the client disconnects
-            user = next((u for u in self.connections if u.conn == websocket), None)
+            user = next(
+                (u for u in self.connections if u.conn == websocket), None
+            )
             if user:
                 self.connections.remove(user)
-                msg = f"{user.username} disconnected"
-                logging.info(msg)
-                out = Message("CONNECTED", msg)
+                msg_text = f"{user.username} disconnected"
+                logging.info(msg_text)
+                out = Message("CONNECTED", msg_text)
                 await self.send_all_clients(out)
             else:
                 logging.info("Unidentified user disconnected")

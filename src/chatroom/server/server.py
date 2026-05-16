@@ -7,6 +7,7 @@ from chatroom.server.message import (
     JsonFormatter,
 )
 from chatroom.server.chatroom import Chatroom
+from chatroom.server.connections import WebsocketConnectionHandler
 
 
 logging.basicConfig(level=logging.INFO)
@@ -14,5 +15,6 @@ logging.basicConfig(level=logging.INFO)
 if __name__ == "__main__":
     formatter = JsonFormatter()
     message_handlers = [IdentityMessageHandler(), BroadcastMessageHandler()]
-    chatroom = Chatroom(formatter, message_handlers)
+    connection_handler = WebsocketConnectionHandler()
+    chatroom = Chatroom(formatter, message_handlers, connection_handler)
     asyncio.run(chatroom.start())
