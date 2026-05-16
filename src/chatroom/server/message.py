@@ -1,20 +1,26 @@
 from typing import Protocol
 import json
 from dataclasses import asdict
-import logging 
+import logging
 
 from websockets.asyncio.server import ServerConnection
 from better_profanity import profanity
+
 profanity.load_censor_words()
 
-from chatroom.server.interfaces import Message, MessageHandler, MessageFormatter, RoomContext
-
+from chatroom.server.interfaces import (
+    Message,
+    MessageHandler,
+    MessageFormatter,
+    RoomContext,
+)
 
 
 class JsonFormatter(MessageFormatter):
     def format(self, message: Message):
         return json.dumps(asdict(message))
-    
+
+
 class BroadcastMessageHandler(MessageHandler):
     keyword = "MESSAGE"
 
@@ -38,7 +44,9 @@ class IdentityMessageHandler(MessageHandler):
             return
 
         if profanity.contains_profanity(username):
-            message = Message(message_type="INVALID_USERNAME", value="Username contains profanity")
+            message = Message(
+                message_type="INVALID_USERNAME", value="Username contains profanity"
+            )
             await context.send_single_client(message, conn)
             return
 
@@ -46,4 +54,3 @@ class IdentityMessageHandler(MessageHandler):
         logging.info(f"User {username} identified")
         message = Message(message_type="CONNECTED", value=f"{username} Connected!")
         await context.send_all_clients(message)
-

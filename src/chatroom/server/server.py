@@ -1,9 +1,12 @@
 import asyncio
 import logging
 
-from chatroom.server.message import IdentityMessageHandler, BroadcastMessageHandler, JsonFormatter
+from chatroom.server.message import (
+    IdentityMessageHandler,
+    BroadcastMessageHandler,
+    JsonFormatter,
+)
 from chatroom.server.chatroom import Chatroom
-
 
 
 logging.basicConfig(level=logging.INFO)

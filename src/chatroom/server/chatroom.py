@@ -1,21 +1,18 @@
 import logging
-from typing import Protocol
 from websockets.asyncio.server import serve
 from websockets.asyncio.server import ServerConnection
 from websockets.exceptions import ConnectionClosed
-from dataclasses import dataclass, asdict
 import uuid
 import asyncio
 import json
 
-from chatroom.server.interfaces import Message, MessageFormatter, MessageHandler, RoomContext
-
-
-@dataclass
-class User:
-    username: str
-    user_id: uuid.UUID
-    conn: ServerConnection
+from chatroom.server.interfaces import (
+    Message,
+    User,
+    MessageFormatter,
+    MessageHandler,
+    RoomContext,
+)
 
 
 class Chatroom(RoomContext):
@@ -24,8 +21,8 @@ class Chatroom(RoomContext):
     ):
         self.formatter = formatter
         self.message_handlers = message_handlers
-        self.connections:list[User] = list()
-        self.recent_messages:list[Message] = list()
+        self.connections: list[User] = list()
+        self.recent_messages: list[Message] = list()
 
     async def send_single_client(self, message: Message, client: ServerConnection):
         try:
@@ -105,9 +102,7 @@ class Chatroom(RoomContext):
             logging.error(f"Error in handler: {e}")
         finally:
             # Unregister when the client disconnects
-            user = next(
-                (u for u in self.connections if u.conn == websocket), None
-            )
+            user = next((u for u in self.connections if u.conn == websocket), None)
             if user:
                 self.connections.remove(user)
                 msg = f"{user.username} disconnected"
