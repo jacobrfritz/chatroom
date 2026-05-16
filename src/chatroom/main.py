@@ -1,6 +1,11 @@
 import asyncio
 
-from chatroom.server.server import Chatroom, JsonFormatter, IdentityMessageHandler, BroadcastMessageHandler
+from chatroom.server.server import (
+    Chatroom,
+    JsonFormatter,
+    IdentityMessageHandler,
+    BroadcastMessageHandler,
+)
 
 
 def run() -> None:
