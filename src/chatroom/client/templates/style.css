@@ -57,6 +57,34 @@ body {
   border-right: 1px solid var(--border-color);
 }
 
+/* Navbar Styles */
+.navbar {
+  padding: 0.5rem 1.5rem;
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--primary-color);
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.back-button:hover {
+  color: var(--primary-hover);
+}
+
+.back-button .icon {
+  font-size: 1.2rem;
+}
+
 /* Overlay Styles */
 .overlay {
   position: fixed;
