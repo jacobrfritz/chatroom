@@ -1,5 +1,7 @@
 import { z } from 'https://cdn.jsdelivr.net/npm/zod@3.22.4/+esm';
+import { Filter } from 'https://esm.sh/bad-words@4.0.0';
 
+const filter = new Filter();
 
 const MessageSchema = z.object({
   type: z.string().min(1, "Type is required"),
@@ -63,6 +65,11 @@ function handleLogin() {
     const username = usernameInput.value.trim();
     if (!username) return;
 
+    if (filter.isProfane(username)) {
+        alert("Username contains profanity. Please pick another one.");
+        return;
+    }
+
     const identity = {
         type: "SET_IDENTITY",
         message: username
@@ -106,9 +113,10 @@ websocket.addEventListener("message", (e) => {
 // Helper function to send messages
 function sendMessage() {
     const message = input.value.trim();
+    const cleanMessage = filter.clean(message);
     const out = {
         type: "MESSAGE",
-        message: message
+        message: cleanMessage
     };
     const result = MessageSchema.safeParse(out);
     if(result.success){

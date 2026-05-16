@@ -6,8 +6,10 @@ from websockets.asyncio.server import ServerConnection
 from typing import Protocol
 from dataclasses import dataclass, asdict
 import uuid
+from better_profanity import profanity
 
 logging.basicConfig(level=logging.INFO)
+profanity.load_censor_words()
 
 
 @dataclass
@@ -55,7 +57,8 @@ class BroadcastMessageHandler(MessageHandler):
 
     async def handle(self, context: RoomContext, conn: ServerConnection, value: str):
         username = context.get_username(conn)
-        msg = Message(message_type="MESSAGE", value=f"{username}: {value}")
+        masked_value = profanity.censor(value)
+        msg = Message(message_type="MESSAGE", value=f"{username}: {masked_value}")
         await context.send_all_clients(msg)
         context.recent_messages.append(msg)
         context.recent_messages = context.recent_messages[-20:]
@@ -66,14 +69,20 @@ class IdentityMessageHandler(MessageHandler):
 
     async def handle(self, context: RoomContext, conn: ServerConnection, value: str):
         username = value
-        if username and username.strip() != "":
-            context.add_user(username, conn)
-            logging.info(f"User {username} identified")
-            message = Message(message_type="CONNECTED", value=f"{username} Connected!")
-            await context.send_all_clients(message)
-        else:
+        if not username or username.strip() == "":
             message = Message(message_type="INVALID_USERNAME", value="Invalid Username")
             await context.send_single_client(message, conn)
+            return
+
+        if profanity.contains_profanity(username):
+            message = Message(message_type="INVALID_USERNAME", value="Username contains profanity")
+            await context.send_single_client(message, conn)
+            return
+
+        context.add_user(username, conn)
+        logging.info(f"User {username} identified")
+        message = Message(message_type="CONNECTED", value=f"{username} Connected!")
+        await context.send_all_clients(message)
 
 
 class Chatroom(RoomContext):
