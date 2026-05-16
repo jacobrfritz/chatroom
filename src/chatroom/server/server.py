@@ -82,7 +82,7 @@ class Chatroom(RoomContext):
     ):
         self.formatter = formatter
         self.message_handlers = message_handlers
-        self.connections = dict()
+        self.connections:list[User] = list()
         self.recent_messages = list()
 
     async def send_single_client(self, message: Message, client: ServerConnection):
@@ -94,7 +94,7 @@ class Chatroom(RoomContext):
             await asyncio.gather(
                 *(
                     self.send_single_client(message, user.conn)
-                    for user in self.connections.values()
+                    for user in self.connections
                 )
             )
 
@@ -110,10 +110,10 @@ class Chatroom(RoomContext):
     def add_user(self, username: str, conn: ServerConnection):
         user_id = uuid.uuid4()
         new_user = User(username=username, conn=conn, user_id=user_id)
-        self.connections[user_id] = new_user
+        self.connections.append(new_user)
 
     def get_username(self, conn: ServerConnection) -> str:
-        for user in self.connections.values():
+        for user in self.connections:
             if user.conn == conn:
                 return user.username
         return "Anonymous"
@@ -159,10 +159,9 @@ class Chatroom(RoomContext):
         finally:
             # Unregister when the client disconnects
             user = next(
-                (u for u in self.connections.values() if u.conn == websocket), None
+                (u for u in self.connections if u.conn == websocket), None
             )
             if user:
-                del self.connections[user.user_id]
                 msg = f"{user.username} disconnected"
                 logging.info(msg)
                 out = Message("CONNECTED", msg)
