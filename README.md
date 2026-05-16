@@ -82,7 +82,7 @@ To run the application in a production-like environment with a reverse proxy:
 
 2. **Run the container:**
    ```bash
-   docker run -p 8080:8080 -p 8765:8765 chatroom
+   docker run chatroom
    ```
    
    **Architecture Note:** This container starts both the frontend (8080) and backend (8765). Ensure your deployment environment (e.g., Docker Compose with Nginx) is configured to:
