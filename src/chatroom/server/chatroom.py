@@ -42,6 +42,8 @@ class Chatroom(RoomContext):
     async def send_all_clients(self, message: Message):
         formatted_message = self.formatter.format(message)
         await self.connection_handler.send_all_clients(self, formatted_message)
+        self.recent_messages.append(formatted_message)
+        self.recent_messages = self.recent_messages[-20:]
 
     async def send_single_client(self, message: Message, conn: ServerConnection):
         formatted_message = self.formatter.format(message)

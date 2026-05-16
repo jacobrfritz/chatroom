@@ -28,10 +28,7 @@ class BroadcastMessageHandler(MessageHandler):
         username = context.get_username(conn)
         masked_value = profanity.censor(value)
         msg = Message(message_type="MESSAGE", value=f"{username}: {masked_value}")
-        formatted_message = context.formatter.format(msg)
         await context.send_all_clients(msg)
-        context.recent_messages.append(formatted_message)
-        context.recent_messages = context.recent_messages[-20:]
 
 
 class IdentityMessageHandler(MessageHandler):
