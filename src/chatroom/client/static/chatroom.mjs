@@ -44,6 +44,10 @@ const loginOverlay = document.getElementById("login-overlay");
 const usernameInput = document.getElementById("username-input");
 const loginButton = document.getElementById("login-button");
 
+if (localStorage.getItem('jakes_music_blog_chat_username')) {
+    loginButton.style.display = "none";
+}
+
 // --- Chat Logic ---
 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
 // Fallback for local development: if on port 8080, connect directly to 8765.
@@ -62,13 +66,24 @@ function appendMessage(text, isSystem = false) {
 }
 
 function handleLogin() {
-    const username = usernameInput.value.trim();
+    const cached_username = localStorage.getItem('jakes_music_blog_chat_username');
+    let username = null;
+
+    if(cached_username){
+        username = cached_username;
+        console.log('Found cached username!')
+    }else{
+        username = usernameInput.value.trim();
+    };
+    
     if (!username) return;
 
     if (filter.isProfane(username)) {
         alert("Username contains profanity. Please pick another one.");
         return;
-    }
+    };
+
+    localStorage.setItem('jakes_music_blog_chat_username', username);
 
     const identity = {
         type: "SET_IDENTITY",
@@ -97,6 +112,9 @@ usernameInput.addEventListener("keydown", (e) => {
 // Define the logic for when the connection starts
 function initializeChat() {
     console.log("WebSocket connected");
+    if (localStorage.getItem('jakes_music_blog_chat_username')) {
+        handleLogin();
+    }
 }
 
 // Handle the connection event
