@@ -1,10 +1,9 @@
-import logging 
+import logging
 from websockets.asyncio.server import ServerConnection
 from websockets.exceptions import ConnectionClosed
 import asyncio
 
-from chatroom.server.interfaces import ConnectionHandler, RoomContext  
-
+from chatroom.server.interfaces import ConnectionHandler, RoomContext
 
 
 class WebsocketConnectionHandler(ConnectionHandler):
@@ -24,7 +23,9 @@ class WebsocketConnectionHandler(ConnectionHandler):
                 return_exceptions=True,
             )
 
-    async def send_recent_messages(self, context: RoomContext, websocket: ServerConnection):
+    async def send_recent_messages(
+        self, context: RoomContext, websocket: ServerConnection
+    ):
         if context.recent_messages:
             await asyncio.gather(
                 *(

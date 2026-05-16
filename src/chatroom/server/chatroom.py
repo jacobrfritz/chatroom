@@ -1,7 +1,7 @@
 import logging
 import uuid
 import json
-import asyncio 
+import asyncio
 
 from websockets.asyncio.server import serve, ServerConnection
 
@@ -17,16 +17,16 @@ from chatroom.server.interfaces import (
 
 class Chatroom(RoomContext):
     def __init__(
-        self, 
-        formatter: MessageFormatter, 
+        self,
+        formatter: MessageFormatter,
         message_handlers: list[MessageHandler],
-        connection_handler: ConnectionHandler
+        connection_handler: ConnectionHandler,
     ):
         self.formatter = formatter
         self.message_handlers = message_handlers
         self.connection_handler = connection_handler
-        self.connections:list[User] = list()
-        self.recent_messages:list[str] = list()
+        self.connections: list[User] = list()
+        self.recent_messages: list[str] = list()
 
     def add_user(self, username: str, conn: ServerConnection):
         user_id = uuid.uuid4()
@@ -87,9 +87,7 @@ class Chatroom(RoomContext):
             logging.error(f"Error in handler: {e}")
         finally:
             # Unregister when the client disconnects
-            user = next(
-                (u for u in self.connections if u.conn == websocket), None
-            )
+            user = next((u for u in self.connections if u.conn == websocket), None)
             if user:
                 self.connections.remove(user)
                 msg_text = f"{user.username} disconnected"
