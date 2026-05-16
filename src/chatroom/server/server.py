@@ -3,6 +3,7 @@ import logging
 import json
 from websockets.asyncio.server import serve
 from websockets.asyncio.server import ServerConnection
+from websockets.exceptions import ConnectionClosed
 from typing import Protocol
 from dataclasses import dataclass, asdict
 import uuid
@@ -30,6 +31,7 @@ class MessageFormatter(Protocol):
 
 
 class RoomContext(Protocol):
+    recent_messages: list[Message] 
     def add_user(self, username: str, conn: ServerConnection): ...
 
     def get_username(self, conn: ServerConnection) -> str: ...
@@ -95,8 +97,11 @@ class Chatroom(RoomContext):
         self.recent_messages:list[Message] = list()
 
     async def send_single_client(self, message: Message, client: ServerConnection):
-        formatted_message = self.formatter.format(message)
-        await client.send(formatted_message)
+        try:
+            formatted_message = self.formatter.format(message)
+            await client.send(formatted_message)
+        except ConnectionClosed:
+            logging.debug("Attempted to send to a closed connection")
 
     async def send_all_clients(self, message: Message):
         if self.connections:
@@ -104,7 +109,8 @@ class Chatroom(RoomContext):
                 *(
                     self.send_single_client(message, user.conn)
                     for user in self.connections
-                )
+                ),
+                return_exceptions=True,
             )
 
     async def send_recent_messages(self, websocket: ServerConnection):
@@ -113,7 +119,8 @@ class Chatroom(RoomContext):
                 *(
                     self.send_single_client(message, websocket)
                     for message in self.recent_messages
-                )
+                ),
+                return_exceptions=True,
             )
 
     def add_user(self, username: str, conn: ServerConnection):
@@ -171,6 +178,7 @@ class Chatroom(RoomContext):
                 (u for u in self.connections if u.conn == websocket), None
             )
             if user:
+                self.connections.remove(user)
                 msg = f"{user.username} disconnected"
                 logging.info(msg)
                 out = Message("CONNECTED", msg)
